@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Expense Tracker</string>
+    <string name="add_expense">Add Expense</string>
+    <string name="edit_expense">Edit Expense</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="total_expenses">Total: %s</string>
+    <string name="no_expenses">No expenses recorded yet</string>
+    <string name="expense_title_hint">Expense Title</string>
+    <string name="amount_hint">Amount</string>
+    <string name="description_hint">Description (Optional)</string>
+    <string name="select_date">Select Date</string>
+    <string name="view_charts">View Charts</string>
+    <string name="expenses_by_category">Expenses by Category</string>
+    <string name="daily_expenses">Daily Expenses (Last 7 Days)</string>
+
+    <string-array name="expense_categories">
+        <item>Food</item>
+        <item>Transportation</item>
+        <item>Shopping</item>
+        <item>Entertainment</item>
+        <item>Bills</item>
+        <item>Healthcare</item>
+        <item>Education</item>
+        <item>Travel</item>
+        <item>Other</item>
+    </string-array>
+</resources>
