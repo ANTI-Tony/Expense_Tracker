@@ -13,9 +13,35 @@ class MainViewModel(private val repository: ExpenseRepository) : ViewModel() {
 
     suspend fun getTotalAmount(): Double = repository.getTotalAmount()
 
+    suspend fun getExpenseCount(): Int {
+        return allExpenses.value?.size ?: 0
+    }
+
     fun deleteExpense(expense: Expense) {
         viewModelScope.launch {
             repository.deleteExpense(expense)
         }
+    }
+
+    fun insertExpense(expense: Expense) {
+        viewModelScope.launch {
+            repository.insertExpense(expense)
+        }
+    }
+
+    fun deleteAllExpenses() {
+        viewModelScope.launch {
+            allExpenses.value?.forEach { expense ->
+                repository.deleteExpense(expense)
+            }
+        }
+    }
+
+    suspend fun getExpensesByCategory(category: String): List<Expense> {
+        return allExpenses.value?.filter { it.category == category } ?: emptyList()
+    }
+
+    suspend fun getRecentExpenses(limit: Int = 5): List<Expense> {
+        return allExpenses.value?.take(limit) ?: emptyList()
     }
 }

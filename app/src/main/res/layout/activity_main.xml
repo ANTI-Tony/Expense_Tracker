@@ -2,6 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.main.MainActivity">
@@ -11,11 +12,13 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="?attr/colorPrimary"
+        android:theme="@style/ThemeOverlay.Material3.Dark.ActionBar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
+        app:popupTheme="@style/ThemeOverlay.Material3.Light"
         app:title="Expense Tracker"
-        app:titleTextColor="@android:color/white" />
+        app:titleTextColor="@color/white" />
 
     <TextView
         android:id="@+id/tvTotalAmount"
@@ -38,17 +41,58 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_margin="8dp"
-        app:layout_constraintBottom_toTopOf="@+id/btnChart"
+        android:clipToPadding="false"
+        android:paddingBottom="80dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvTotalAmount"
         tools:listitem="@layout/item_expense" />
 
+    <!-- Empty State View -->
+    <LinearLayout
+        android:id="@+id/emptyStateView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvTotalAmount">
+
+        <ImageView
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:alpha="0.3"
+            android:src="@drawable/ic_empty_expenses"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No expenses yet"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/secondary_text"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tap the + button to add your first expense"
+            android:textSize="14sp"
+            android:textColor="@color/secondary_text"
+            android:textAlignment="center" />
+
+    </LinearLayout>
+
     <Button
         android:id="@+id/btnChart"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="8dp"
+        android:layout_margin="16dp"
         android:text="View Charts"
         app:layout_constraintBottom_toTopOf="@+id/fabAdd"
         app:layout_constraintEnd_toEndOf="parent"

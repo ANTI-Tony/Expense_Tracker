@@ -14,10 +14,12 @@
         app:title="Expense Charts"
         app:titleTextColor="@android:color/white" />
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -44,7 +46,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp" />
+                    android:padding="16dp"
+                    android:minHeight="120dp" />
 
             </androidx.cardview.widget.CardView>
 
@@ -67,12 +70,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp" />
+                    android:padding="16dp"
+                    android:minHeight="120dp" />
 
             </androidx.cardview.widget.CardView>
 
         </LinearLayout>
 
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
 </LinearLayout>
