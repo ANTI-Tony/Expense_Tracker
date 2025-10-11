@@ -36,42 +36,29 @@ class ExpenseService : Service() {
     private lateinit var runnable: Runnable
     private var transactionCount = 0
 
+    // 模拟iOS SMS解析的智能解析器
+    private val smartParser = SmartTransactionParser()
+
     companion object {
         private const val TAG = "ExpenseService"
         private const val CHANNEL_ID = "ExpenseServiceChannel"
         private const val NOTIFICATION_ID = 1
-        private const val SIMULATION_INTERVAL = 30000L // 30 seconds for demo
-
-        private val SAMPLE_EXPENSES = listOf(
-            "Morning Coffee" to "Food" to (3.50 to 5.99),
-            "Bus Ticket" to "Transportation" to (2.50 to 4.00),
-            "Lunch" to "Food" to (8.99 to 15.50),
-            "Movie Ticket" to "Entertainment" to (12.99 to 18.99),
-            "Grocery Shopping" to "Shopping" to (25.00 to 85.00),
-            "Gas Station" to "Transportation" to (35.00 to 65.00),
-            "Phone Bill" to "Bills" to (45.00 to 75.00),
-            "Parking Fee" to "Transportation" to (2.00 to 8.00),
-            "Snack" to "Food" to (1.50 to 4.99),
-            "Uber Ride" to "Transportation" to (8.50 to 25.00),
-            "Streaming Service" to "Entertainment" to (9.99 to 14.99),
-            "Pharmacy" to "Healthcare" to (12.50 to 35.00)
-        )
+        private const val SIMULATION_INTERVAL = 25000L // 25秒间隔
     }
 
     override fun onCreate() {
         super.onCreate()
-        Log.d(TAG, "Service onCreate()")
+        Log.d(TAG, "Service onCreate() - Starting intelligent transaction detection")
 
         val database = ExpenseDatabase.getDatabase(applicationContext)
         repository = ExpenseRepository(database.expenseDao())
 
         createNotificationChannel()
 
-        // 检查权限并启动前台服务
         if (hasRequiredPermissions()) {
             try {
                 startForeground(NOTIFICATION_ID, createNotification())
-                Log.d(TAG, "Foreground service started successfully")
+                Log.d(TAG, "Intelligent expense detection service started successfully")
             } catch (e: SecurityException) {
                 Log.e(TAG, "Failed to start foreground service - permission denied", e)
                 stopSelf()
@@ -84,95 +71,276 @@ class ExpenseService : Service() {
         }
 
         handler = Handler(Looper.getMainLooper())
-        setupPeriodicTask()
+        setupIntelligentDetection()
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(TAG, "Service onStartCommand()")
-        return START_STICKY
-    }
-
-    override fun onBind(intent: Intent?): IBinder? = null
-
-    private fun hasRequiredPermissions(): Boolean {
-        val foregroundServicePermission = ContextCompat.checkSelfPermission(
-            this, android.Manifest.permission.FOREGROUND_SERVICE
-        ) == PackageManager.PERMISSION_GRANTED
-
-        // 检查Android 14+的数据同步权限
-        val dataSyncPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            ContextCompat.checkSelfPermission(
-                this, android.Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true // Android 14以下不需要这个权限
-        }
-
-        Log.d(TAG, "Permissions - Foreground: $foregroundServicePermission, DataSync: $dataSyncPermission")
-        return foregroundServicePermission && dataSyncPermission
-    }
-
-    private fun setupPeriodicTask() {
+    private fun setupIntelligentDetection() {
         runnable = object : Runnable {
             override fun run() {
-                simulateAutomaticExpense()
+                simulateIntelligentSMSParsing()
                 handler.postDelayed(this, SIMULATION_INTERVAL)
             }
         }
         handler.post(runnable)
     }
 
-    private fun simulateAutomaticExpense() {
+    private fun simulateIntelligentSMSParsing() {
         serviceScope.launch {
             try {
-                // Higher probability for demo purposes (50% chance)
-                if (Random.nextFloat() < 0.5f) {
-                    val selectedExpense = SAMPLE_EXPENSES.random()
-                    val (title, category) = selectedExpense.first
-                    val (minAmount, maxAmount) = selectedExpense.second
-                    val amount = Random.nextDouble(minAmount, maxAmount)
+                // 60%概率检测到"SMS"，模拟真实场景
+                if (Random.nextFloat() < 0.6f) {
+                    val simulatedSMS = smartParser.generateRealisticSMS()
+                    val parsedResult = smartParser.parseTransaction(simulatedSMS)
 
-                    // Add some variance to the date (within last 24 hours)
-                    val calendar = Calendar.getInstance()
-                    calendar.add(Calendar.HOUR_OF_DAY, -Random.nextInt(24))
+                    parsedResult?.let { result ->
+                        val expense = Expense(
+                            title = result.title,
+                            amount = result.amount,
+                            category = result.category,
+                            date = result.date,
+                            description = "Auto-detected: ${result.originalText}"
+                        )
 
-                    val expense = Expense(
-                        title = title,
-                        amount = amount,
-                        category = category,
-                        date = calendar.time,
-                        description = "Automatically detected transaction #${++transactionCount}"
-                    )
+                        repository.insertExpense(expense)
 
-                    repository.insertExpense(expense)
-                    val formattedAmount = String.format("%.2f", amount)
-                    updateNotification("New expense detected: $title - $$formattedAmount")
+                        Log.d(TAG, "Intelligent parsing: '${simulatedSMS}' -> ${result.title} \$${String.format("%.2f", result.amount)}")
+                        updateNotification("Parsed SMS: ${result.title} - \$${String.format("%.2f", result.amount)}")
 
-                    Log.d(TAG, "Auto expense added: $title - $$formattedAmount")
+                        transactionCount++
 
-                    // Show a more detailed notification occasionally
-                    if (transactionCount % 5 == 0) {
-                        showDetailedNotification("$transactionCount transactions processed automatically!")
+                        // 每5笔交易显示统计
+                        if (transactionCount % 5 == 0) {
+                            showIntelligenceReport()
+                        }
                     }
-
                 } else {
-                    updateNotification("Monitoring for transactions... ($transactionCount processed)")
+                    updateNotification("Monitoring SMS for transactions... (${transactionCount} parsed)")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error in automatic expense simulation", e)
-                updateNotification("Error processing automatic expense")
+                Log.e(TAG, "Error in intelligent SMS parsing simulation", e)
+                updateNotification("Error in intelligent parsing engine")
             }
         }
+    }
+
+    private fun showIntelligenceReport() {
+        val detailedNotification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("Smart Parsing Report")
+            .setContentText("Successfully parsed $transactionCount SMS transactions with AI")
+            .setSmallIcon(R.drawable.ic_add)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .build()
+
+        try {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.notify(Random.nextInt(), detailedNotification)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing intelligence report", e)
+        }
+    }
+
+    // 模拟iOS的智能SMS解析器
+    private class SmartTransactionParser {
+
+        // 模拟真实的支付SMS模板（基于你的iOS版本）
+        private val smsTemplates = listOf(
+            "您在 {merchant} 消费 {amount}元，当前余额{balance}元 【某银行】",
+            "支付宝交易提醒：您向 {merchant} 付款{amount}元",
+            "微信支付凭证：商户{merchant}，金额￥{amount}",
+            "您尾号{card}的卡片在{merchant}消费{amount}元",
+            "交通银行提醒您：您在{merchant}刷卡消费{amount}元",
+            "招商银行：您账户在{merchant}发生支出{amount}元",
+            "中国银行：{merchant}消费{amount}元，账户余额{balance}元",
+            "建设银行：您在{merchant}的交易金额为{amount}元"
+        )
+
+        // 智能商户和分类映射（模拟你的iOS分类逻辑）
+        private val merchantCategories = mapOf(
+            // 餐饮类
+            "星巴克" to ("Food" to (15.0 to 45.0)),
+            "麦当劳" to ("Food" to (25.0 to 65.0)),
+            "肯德基" to ("Food" to (30.0 to 70.0)),
+            "海底捞" to ("Food" to (80.0 to 200.0)),
+            "喜茶" to ("Food" to (18.0 to 35.0)),
+            "沙县小吃" to ("Food" to (12.0 to 25.0)),
+
+            // 交通类
+            "滴滴出行" to ("Transportation" to (8.0 to 45.0)),
+            "地铁公司" to ("Transportation" to (2.0 to 8.0)),
+            "中石化加油站" to ("Transportation" to (200.0 to 500.0)),
+            "停车场" to ("Transportation" to (5.0 to 25.0)),
+
+            // 购物类
+            "淘宝网" to ("Shopping" to (20.0 to 300.0)),
+            "京东商城" to ("Shopping" to (50.0 to 500.0)),
+            "苹果专卖店" to ("Shopping" to (500.0 to 8000.0)),
+            "优衣库" to ("Shopping" to (100.0 to 400.0)),
+
+            // 娱乐类
+            "万达影城" to ("Entertainment" to (35.0 to 80.0)),
+            "KTV" to ("Entertainment" to (100.0 to 300.0)),
+            "游戏充值" to ("Entertainment" to (6.0 to 200.0)),
+
+            // 生活服务
+            "美团外卖" to ("Food" to (20.0 to 60.0)),
+            "饿了么" to ("Food" to (25.0 to 55.0)),
+            "盒马鲜生" to ("Shopping" to (50.0 to 200.0)),
+            "物业费" to ("Bills" to (200.0 to 800.0))
+        )
+
+        fun generateRealisticSMS(): String {
+            val template = smsTemplates.random()
+            val (merchant, categoryInfo) = merchantCategories.entries.random()
+            val (category, amountRange) = categoryInfo
+            val amount = Random.nextDouble(amountRange.first, amountRange.second)
+            val balance = Random.nextDouble(1000.0, 50000.0)
+            val card = "****${Random.nextInt(1000, 9999)}"
+
+            return template
+                .replace("{merchant}", merchant)
+                .replace("{amount}", String.format("%.2f", amount))
+                .replace("{balance}", String.format("%.2f", balance))
+                .replace("{card}", card)
+        }
+
+        fun parseTransaction(smsText: String): ParsedTransaction? {
+            return try {
+                // 模拟你的iOS NLP解析逻辑
+                val amount = extractAmount(smsText)
+                val (merchant, category) = extractMerchantAndCategory(smsText)
+                val transactionType = identifyTransactionType(smsText)
+
+                if (amount != null && merchant != null) {
+                    ParsedTransaction(
+                        title = merchant,
+                        amount = amount,
+                        category = category,
+                        date = Date(),
+                        originalText = smsText,
+                        confidence = calculateConfidence(smsText)
+                    )
+                } else {
+                    Log.w(TAG, "Failed to parse SMS: $smsText")
+                    null
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error parsing SMS: $smsText", e)
+                null
+            }
+        }
+
+        private fun extractAmount(text: String): Double? {
+            // 模拟你的iOS金额识别算法
+            val patterns = listOf(
+                "消费\\s*([0-9]+(?:\\.[0-9]+)?)元",
+                "付款\\s*([0-9]+(?:\\.[0-9]+)?)元",
+                "金额[￥¥]?\\s*([0-9]+(?:\\.[0-9]+)?)",
+                "支出\\s*([0-9]+(?:\\.[0-9]+)?)元",
+                "交易金额为\\s*([0-9]+(?:\\.[0-9]+)?)元"
+            )
+
+            for (pattern in patterns) {
+                val regex = Regex(pattern)
+                val match = regex.find(text)
+                if (match != null) {
+                    return match.groupValues[1].toDoubleOrNull()
+                }
+            }
+            return null
+        }
+
+        private fun extractMerchantAndCategory(text: String): Pair<String?, String> {
+            // 查找已知商户
+            for ((merchant, categoryInfo) in merchantCategories) {
+                if (text.contains(merchant)) {
+                    return Pair(merchant, categoryInfo.first)
+                }
+            }
+
+            // 通用商户提取
+            val merchantPatterns = listOf(
+                "在\\s*([^\\s]+)\\s*消费",
+                "向\\s*([^\\s]+)\\s*付款",
+                "商户\\s*([^\\s]+)",
+                "([^\\s]+)\\s*刷卡"
+            )
+
+            for (pattern in merchantPatterns) {
+                val regex = Regex(pattern)
+                val match = regex.find(text)
+                if (match != null) {
+                    val merchant = match.groupValues[1]
+                    return Pair(merchant, "Other")
+                }
+            }
+
+            return Pair("Unknown Merchant", "Other")
+        }
+
+        private fun identifyTransactionType(text: String): String {
+            val expenseKeywords = listOf("消费", "付款", "支出", "购买", "刷卡")
+            val incomeKeywords = listOf("收入", "转入", "工资", "退款")
+
+            return when {
+                expenseKeywords.any { text.contains(it) } -> "expense"
+                incomeKeywords.any { text.contains(it) } -> "income"
+                else -> "expense" // 默认为支出
+            }
+        }
+
+        private fun calculateConfidence(text: String): Double {
+            var confidence = 0.5
+
+            // 如果包含银行关键词，置信度提高
+            if (text.contains("银行") || text.contains("支付宝") || text.contains("微信")) {
+                confidence += 0.3
+            }
+
+            // 如果金额格式标准，置信度提高
+            if (text.contains("元") || text.contains("￥")) {
+                confidence += 0.2
+            }
+
+            return minOf(confidence, 1.0)
+        }
+    }
+
+    data class ParsedTransaction(
+        val title: String,
+        val amount: Double,
+        val category: String,
+        val date: Date,
+        val originalText: String,
+        val confidence: Double
+    )
+
+    // 其余代码保持不变...
+    private fun hasRequiredPermissions(): Boolean {
+        val foregroundServicePermission = ContextCompat.checkSelfPermission(
+            this, android.Manifest.permission.FOREGROUND_SERVICE
+        ) == PackageManager.PERMISSION_GRANTED
+
+        val dataSyncPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ContextCompat.checkSelfPermission(
+                this, android.Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+
+        return foregroundServicePermission && dataSyncPermission
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Expense Tracker Service",
+                "Smart Expense Detection",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Background service for automatic expense tracking"
+                description = "AI-powered transaction detection from SMS simulation"
                 setShowBadge(false)
                 enableLights(false)
                 enableVibration(false)
@@ -180,7 +348,6 @@ class ExpenseService : Service() {
 
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
-            Log.d(TAG, "Notification channel created")
         }
     }
 
@@ -194,8 +361,8 @@ class ExpenseService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Expense Tracker")
-            .setContentText("Monitoring for automatic transactions...")
+            .setContentTitle("Smart Expense Tracker")
+            .setContentText("AI monitoring SMS for automatic expense detection...")
             .setSmallIcon(R.drawable.ic_add)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
@@ -205,12 +372,10 @@ class ExpenseService : Service() {
     }
 
     private fun updateNotification(message: String) {
-        // 检查是否有通知权限
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
                     this, android.Manifest.permission.POST_NOTIFICATIONS
                 ) != PackageManager.PERMISSION_GRANTED) {
-                Log.w(TAG, "No notification permission, skipping notification update")
                 return
             }
         }
@@ -225,7 +390,7 @@ class ExpenseService : Service() {
             )
 
             val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Expense Tracker")
+                .setContentTitle("Smart Expense Tracker")
                 .setContentText(message)
                 .setSmallIcon(R.drawable.ic_add)
                 .setContentIntent(pendingIntent)
@@ -237,55 +402,26 @@ class ExpenseService : Service() {
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.notify(NOTIFICATION_ID, notification)
 
-        } catch (e: SecurityException) {
-            Log.e(TAG, "Failed to update notification - permission denied", e)
         } catch (e: Exception) {
             Log.e(TAG, "Error updating notification", e)
         }
     }
 
-    private fun showDetailedNotification(message: String) {
-        // 检查通知权限
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    this, android.Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED) {
-                return
-            }
-        }
-
-        try {
-            val detailedNotification = NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Auto-Expense Update")
-                .setContentText(message)
-                .setSmallIcon(R.drawable.ic_add)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setAutoCancel(true)
-                .setCategory(NotificationCompat.CATEGORY_STATUS)
-                .build()
-
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.notify(Random.nextInt(), detailedNotification)
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Error showing detailed notification", e)
-        }
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        return START_STICKY
     }
+
+    override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(TAG, "Service onDestroy()")
+        Log.d(TAG, "Smart parsing service destroyed")
 
         try {
             handler.removeCallbacks(runnable)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error removing handler callbacks", e)
-        }
-
-        try {
             serviceScope.cancel()
         } catch (e: Exception) {
-            Log.e(TAG, "Error canceling service scope", e)
+            Log.e(TAG, "Error during service cleanup", e)
         }
     }
 }
