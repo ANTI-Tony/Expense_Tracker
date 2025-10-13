@@ -346,13 +346,13 @@ class AddEditActivity : AppCompatActivity() {
 
         // Validation
         if (title.isEmpty()) {
-            etTitle.error = "Title is required"
+            etTitle.error = "标题不能为空"
             etTitle.requestFocus()
             return
         }
 
         if (amountText.isEmpty()) {
-            etAmount.error = "Amount is required"
+            etAmount.error = "金额不能为空"
             etAmount.requestFocus()
             return
         }
@@ -360,13 +360,13 @@ class AddEditActivity : AppCompatActivity() {
         val amount = try {
             amountText.toDouble()
         } catch (e: NumberFormatException) {
-            etAmount.error = "Invalid amount"
+            etAmount.error = "请输入有效的金额"
             etAmount.requestFocus()
             return
         }
 
         if (amount <= 0) {
-            etAmount.error = "Amount must be greater than 0"
+            etAmount.error = "金额必须大于0"
             etAmount.requestFocus()
             return
         }

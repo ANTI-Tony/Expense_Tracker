@@ -262,9 +262,9 @@ override fun onSaveInstanceState(outState: Bundle) {
 
 **错误提示示例**：
 ```
-标题：❌ "标题不能为空"
-金额：❌ "金额必须大于 0"
-金额：❌ "请输入有效的金额"
+标题："标题不能为空"
+金额："金额必须大于 0"
+金额："请输入有效的金额"
 ```
 
 ---
@@ -280,8 +280,8 @@ override fun onSaveInstanceState(outState: Bundle) {
 
 **数据统计**：
 ```
-总费用: $245.67
-记录数: 15 条
+总费用: $15488.90
+记录数: 20 +
 最近更新: 刚刚
 ```
 
@@ -290,7 +290,7 @@ override fun onSaveInstanceState(outState: Bundle) {
 ### 性能测试截图
 
 #### 11. 大量数据加载
-![大量数据](screenshots/large_dataset.png)
+![大量数据](screenshots/large_dataset.webm)
 
 **测试数据**：
 - 100+ 条费用记录
@@ -309,12 +309,10 @@ override fun onSaveInstanceState(outState: Bundle) {
 
 #### 12. 不同 Android 版本测试
 
-| 版本 | API Level | 测试状态 | 截图 |
-|-----|-----------|----|------|
-| Android 7.0 | API 24 | 通过 | ![API24](screenshots/api24.png) |
-| Android 11 | API 30 | 通过 | ![API30](screenshots/api30.png) |
-| Android 13 | API 33 | 通过 | ![API33](screenshots/api33.png) |
-| Android 14 | API 34 | 通过 | ![API34](screenshots/api34.png) |
+| 版本 | API Level | 测试状态 | 截图                              |
+|-----|-----------|----|---------------------------------|
+| Android 11 | API 31    | 通过 | ![API31](screenshots/api31.png) |
+| Android 13 | API 33    | 通过 | ![API33](screenshots/api33.png) |
 
 **兼容性要点**：
 - 权限适配（Android 13+ 通知权限）
