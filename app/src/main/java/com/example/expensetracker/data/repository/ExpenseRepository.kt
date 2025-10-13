@@ -10,6 +10,8 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
 
     fun getAllExpenses(): LiveData<List<Expense>> = expenseDao.getAllExpenses()
 
+    suspend fun getAllExpensesSync(): List<Expense> = expenseDao.getAllExpensesSync()
+
     suspend fun getExpenseById(id: Long): Expense? = expenseDao.getExpenseById(id)
 
     suspend fun insertExpense(expense: Expense): Long = expenseDao.insertExpense(expense)
@@ -20,6 +22,9 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
 
     fun getExpensesByDateRange(startDate: Date, endDate: Date): LiveData<List<Expense>> =
         expenseDao.getExpensesByDateRange(startDate, endDate)
+
+    suspend fun getExpensesByDateRangeSync(startDate: Date, endDate: Date): List<Expense> =
+        expenseDao.getExpensesByDateRangeSync(startDate, endDate)
 
     suspend fun getCategoryTotals(): List<CategoryTotal> = expenseDao.getCategoryTotals()
 

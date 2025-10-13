@@ -7,9 +7,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.example.expensetracker.R
 import com.example.expensetracker.data.database.ExpenseDatabase
 import com.example.expensetracker.data.repository.ExpenseRepository
@@ -81,9 +79,6 @@ class ChartActivity : AppCompatActivity() {
                 scrollView.scrollTo(0, scrollPosition)
             }
         }
-
-        // 检查数据是否需要刷新（例如从其他Activity返回后）
-        refreshDataIfNeeded()
     }
 
     override fun onPause() {
@@ -139,7 +134,6 @@ class ChartActivity : AppCompatActivity() {
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         Log.d(TAG, "onRestoreInstanceState() called")
-        // 恢复逻辑在 restoreInstanceState 方法中处理
     }
 
     private fun restoreInstanceState(savedInstanceState: Bundle?) {
@@ -187,26 +181,45 @@ class ChartActivity : AppCompatActivity() {
         showLoadingState()
 
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                try {
-                    val categoryTotals = viewModel.getCategoryTotals()
-                    val dailyExpenses = viewModel.getDailyExpensesLast7Days()
+            try {
+                // 🔥 调试：先检查数据库中有多少费用
+                val allExpenses = repository.getAllExpensesSync()
+                Log.d(TAG, "=== Database Debug Info ===")
+                Log.d(TAG, "Total expenses in database: ${allExpenses.size}")
 
-                    // 缓存数据
-                    categoryData = categoryTotals
-                    dailyData = dailyExpenses
-                    isDataLoaded = true
-
-                    Log.d(TAG, "Data loaded - categories: ${categoryTotals.size}, daily: ${dailyExpenses.size}")
-
-                    displayCategoryData(categoryTotals)
-                    displayDailyData(dailyExpenses)
-                    showContentState()
-
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error loading chart data", e)
-                    showErrorState()
+                if (allExpenses.isEmpty()) {
+                    Log.w(TAG, "⚠️ Database is empty! No expenses found.")
+                } else {
+                    Log.d(TAG, "📊 Expenses found:")
+                    allExpenses.take(10).forEach { expense ->
+                        Log.d(TAG, "  - ${expense.title}: $${expense.amount} on ${expense.date}")
+                    }
+                    if (allExpenses.size > 10) {
+                        Log.d(TAG, "  ... and ${allExpenses.size - 10} more")
+                    }
                 }
+
+                // 加载图表数据
+                val categoryTotals = viewModel.getCategoryTotals()
+                val dailyExpenses = viewModel.getDailyExpensesLast7Days()
+
+                Log.d(TAG, "=== Chart Data Loaded ===")
+                Log.d(TAG, "Category data - ${categoryTotals.size} categories")
+                Log.d(TAG, "Daily data - ${dailyExpenses.size} days")
+
+                // 缓存数据
+                categoryData = categoryTotals
+                dailyData = dailyExpenses
+                isDataLoaded = true
+
+                // 显示数据
+                displayCategoryData(categoryTotals)
+                displayDailyData(dailyExpenses)
+                showContentState()
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading chart data", e)
+                showErrorState()
             }
         }
     }
@@ -218,20 +231,10 @@ class ChartActivity : AppCompatActivity() {
         showContentState()
     }
 
-    private fun refreshDataIfNeeded() {
-        // 检查数据是否需要刷新
-        // 可以基于时间戳或其他条件来决定
-        Log.d(TAG, "Checking if data refresh is needed")
-
-        // 如果数据超过5分钟，重新加载
-        // 这里简化为总是保持现有数据，除非用户主动刷新
-    }
-
     private fun showLoadingState() {
         categoryContainer.removeAllViews()
         dailyContainer.removeAllViews()
 
-        // 创建新的加载视图而不是重用
         val loadingView = createLoadingView()
         categoryContainer.addView(loadingView)
         categoryContainer.visibility = View.VISIBLE
@@ -242,7 +245,6 @@ class ChartActivity : AppCompatActivity() {
         categoryContainer.removeAllViews()
         dailyContainer.removeAllViews()
 
-        // 创建新的错误视图而不是重用
         val errorView = createErrorView()
         categoryContainer.addView(errorView)
         categoryContainer.visibility = View.VISIBLE
@@ -318,6 +320,9 @@ class ChartActivity : AppCompatActivity() {
     private fun displayDailyData(dailyExpenses: Map<String, Double>) {
         dailyContainer.removeAllViews()
 
+        Log.d(TAG, "=== Displaying Daily Data ===")
+        Log.d(TAG, "Daily expenses map size: ${dailyExpenses.size}")
+
         if (dailyExpenses.isEmpty()) {
             val emptyView = TextView(this).apply {
                 text = "No daily expense data available"
@@ -333,7 +338,11 @@ class ChartActivity : AppCompatActivity() {
         val maxAmount = dailyExpenses.values.maxOrNull() ?: 0.0
         val currencyFormat = NumberFormat.getCurrencyInstance(Locale.getDefault())
 
+        Log.d(TAG, "Max daily amount: $maxAmount")
+
         dailyExpenses.forEach { (date, amount) ->
+            Log.d(TAG, "Creating view for: $date = $${amount}")
+
             val itemView = layoutInflater.inflate(R.layout.item_chart_bar, dailyContainer, false)
 
             val tvDate = itemView.findViewById<TextView>(R.id.tvLabel)
@@ -343,7 +352,16 @@ class ChartActivity : AppCompatActivity() {
             tvDate.text = date
             tvAmount.text = currencyFormat.format(amount)
             progressBar.max = 100
-            progressBar.progress = if (maxAmount > 0) ((amount / maxAmount) * 100).toInt() else 0
+
+            val progress = if (maxAmount > 0) {
+                ((amount / maxAmount) * 100).toInt()
+            } else {
+                0
+            }
+
+            progressBar.progress = progress
+
+            Log.d(TAG, "Progress bar for $date: $progress%")
 
             dailyContainer.addView(itemView)
         }
