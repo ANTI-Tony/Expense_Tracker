@@ -51,6 +51,55 @@ PS: 我简历中iOS版本完整记账软件的仓库链接：https://github.com/
 - 完善的生命周期状态管理
 - 多层次错误处理
 
+## 说明：自动数据注入功能
+
+### 演示模式说明
+
+为了演示后台服务和智能交易检测功能（模拟 iOS 版本的 SMS 解析），**应用会自动生成模拟交易数据**。
+
+#### 自动注入机制
+
+- **触发频率**：每 25 秒检测一次
+- **注入概率**：60% 概率生成新交易
+- **数据来源**：`ExpenseService` 中的 `SmartTransactionParser`
+- **模拟场景**：20+ 种真实商户和银行 SMS 格式
+
+#### 典型场景示例
+```
+"您在 星巴克 消费 28.50元，余额1234.56元 【招商银行】"
+"支付宝交易提醒：您向 麦当劳 付款35.80元"
+"微信支付凭证：商户海底捞，金额￥128.90"
+```
+
+#### 为什么这样设计？
+
+1. **满足项目要求**：展示后台服务的实现和使用
+2. **模拟 iOS 功能**：我的 [iOS 版本](https://github.com/ANTI-Tony/Brief-Notes) 会解析真实的银行 SMS，Android 版本用模拟数据展示相同能力
+3. **快速演示**：无需手动输入大量数据即可看到完整功能
+
+---
+
+### 如何控制自动数据注入
+
+#### 方法 1：完全停止自动注入（推荐用于测试）
+
+在 `MainActivity.kt` 中注释以下代码：
+```kotlin
+override fun onCreate(savedInstanceState: Bundle?) {
+    // ...
+    
+    // 注释掉这一行停止自动注入
+    // startService(Intent(this, ExpenseService::class.java))
+}
+
+override fun onStart() {
+    // ...
+    
+    // 同样注释掉这一行
+    // startService(Intent(this, ExpenseService::class.java))
+}
+```
+
 ### 1.2 技术架构
 
 ```
